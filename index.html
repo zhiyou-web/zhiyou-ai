@@ -1,473 +1,174 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI创作平台 - 即梦API</title>
-    <!-- 引入Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入Font Awesome图标 -->
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <!-- 引入Axios -->
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    
-    <!-- Tailwind配置 -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        secondary: '#7B61FF',
-                        dark: '#1E1E2E',
-                        light: '#F5F7FA'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .tab-active {
-                @apply border-b-2 border-primary text-primary font-medium;
-            }
-            .card-shadow {
-                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>即梦AI全能版</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
+body{background:#f5f7fa;height:100vh;display:flex;flex-direction:column}
+.header{background:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #eee}
+.logo{width:32px;height:32px;background:#5b6ff0;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:bold}
+.title{font-size:17px;font-weight:600}
+#mode{margin-left:auto;padding:6px 12px;border:1px solid #ddd;border-radius:12px;outline:none;background:#fff}
+.chat{flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:80%;padding:10px 14px;border-radius:16px;line-height:1.4}
+.user{align-self:flex-end;background:#5b6ff0;color:#fff;border-bottom-right-radius:4px}
+.bot{align-self:flex-start;background:#fff;border:1px solid #eee;border-bottom-left-radius:4px}
+.upload{margin:6px 0}
+.upload input{width:100%;margin-top:4px}
+.result-img{max-width:100%;border-radius:12px;margin-top:8px}
+.result-video{max-width:100%;border-radius:12px;margin-top:8px}
+.loading{color:#666;font-style:italic}
+.input-bar{background:#fff;padding:12px 20px;display:flex;gap:10px;border-top:1px solid #eee}
+#prompt{flex:1;padding:12px 16px;border:1px solid #ddd;border-radius:24px;outline:none}
+button{padding:12px 20px;border:none;border-radius:24px;background:#5b6ff0;color:#fff;cursor:pointer}
+.clear{background:#f1f3f5;color:#333}
+.panel{display:none;margin:6px 0}
+</style>
 </head>
-<body class="bg-light min-h-screen">
-    <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <i class="fa fa-magic text-primary text-2xl"></i>
-                <h1 class="text-xl font-bold text-dark">AI创作平台</h1>
-            </div>
-            
-            <!-- API设置按钮 -->
-            <button id="settingBtn" class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
-                <i class="fa fa-cog"></i>
-                <span class="hidden sm:inline">API设置</span>
-            </button>
-        </div>
-    </header>
+<body>
 
-    <!-- 主内容区 -->
-    <main class="container mx-auto px-4 py-6">
-        <!-- 功能标签页 -->
-        <div class="bg-white rounded-xl p-4 mb-6 overflow-x-auto card-shadow">
-            <div class="flex gap-1 sm:gap-2 tabs-container">
-                <button class="tab-btn tab-active px-3 py-2 text-sm" data-tab="txt2img">文生图</button>
-                <button class="tab-btn px-3 py-2 text-sm" data-tab="img2img">图生图</button>
-                <button class="tab-btn px-3 py-2 text-sm" data-tab="txt2video">文生视频</button>
-                <button class="tab-btn px-3 py-2 text-sm" data-tab="img2video">图生视频</button>
-                <button class="tab-btn px-3 py-2 text-sm" data-tab="frame2video">首尾帧生视频</button>
-                <button class="tab-btn px-3 py-2 text-sm" data-tab="refvideo">参考视频生视频</button>
-                <button class="tab-btn px-3 py-2 text-sm" data-tab="allref">全能参考生视频</button>
-            </div>
-        </div>
+<div class="header">
+  <div class="logo">AI</div>
+  <div class="title">即梦AI全能版</div>
+  <select id="mode">
+    <option value="text2img">文生图</option>
+    <option value="text2video">文生视频</option>
+    <option value="img2video">图生视频</option>
+    <option value="headtail2video">首尾帧生视频</option>
+    <option value="ref2video">全能参考生视频</option>
+  </select>
+</div>
 
-        <!-- 内容面板 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 左侧：参数配置区 -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl p-5 card-shadow">
-                    <!-- 文生图 -->
-                    <div id="txt2img" class="tab-content block">
-                        <h2 class="text-lg font-semibold mb-4">文生图</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">提示词（正面）</label>
-                                <textarea placeholder="描述你想生成的图片，例如：一只可爱的猫咪，油画风格，高清" class="w-full p-3 border rounded-lg h-24 resize-none"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">负面提示词（可选）</label>
-                                <textarea placeholder="不想生成的内容，例如：模糊，低质量，失真" class="w-full p-3 border rounded-lg h-16 resize-none"></textarea>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">宽度</label>
-                                    <input type="number" value="1024" class="w-full p-2 border rounded-lg">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">高度</label>
-                                    <input type="number" value="1024" class="w-full p-2 border rounded-lg">
-                                </div>
-                            </div>
-                            <button class="generate-btn w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition flex items-center justify-center gap-2">
-                                <i class="fa fa-rocket"></i>
-                                <span>开始生成图片</span>
-                            </button>
-                        </div>
-                    </div>
+<div class="chat" id="chat"></div>
 
-                    <!-- 图生图 -->
-                    <div id="img2img" class="tab-content hidden">
-                        <h2 class="text-lg font-semibold mb-4">图生图</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">上传参考图片</label>
-                                <div class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50">
-                                    <input type="file" class="hidden" id="img2imgFile">
-                                    <label for="img2imgFile" class="cursor-pointer">
-                                        <i class="fa fa-upload text-gray-400 text-2xl"></i>
-                                        <p class="text-sm text-gray-500 mt-2">点击上传图片</p>
-                                    </label>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">提示词</label>
-                                <textarea placeholder="描述修改方向" class="w-full p-3 border rounded-lg h-20"></textarea>
-                            </div>
-                            <button class="generate-btn w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition">
-                                <i class="fa fa-magic"></i> 生成新图片
-                            </button>
-                        </div>
-                    </div>
+<div class="panel" id="p_img2video">
+  <div class="upload"><input type="file" id="img1" accept="image/*"></div>
+</div>
+<div class="panel" id="p_headtail">
+  <div class="upload"><input type="file" id="head" accept="image/*"></div>
+  <div class="upload"><input type="file" id="tail" accept="image/*"></div>
+</div>
+<div class="panel" id="p_ref">
+  <div class="upload"><input type="file" id="refs" accept="image/*" multiple></div>
+</div>
 
-                    <!-- 文生视频 -->
-                    <div id="txt2video" class="tab-content hidden">
-                        <h2 class="text-lg font-semibold mb-4">文生视频</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">视频描述</label>
-                                <textarea placeholder="描述你想生成的视频" class="w-full p-3 border rounded-lg h-24"></textarea>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">时长(秒)</label>
-                                    <input type="number" value="5" class="w-full p-2 border rounded-lg">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">分辨率</label>
-                                    <select class="w-full p-2 border rounded-lg">
-                                        <option>1080P</option>
-                                        <option>720P</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition">
-                                <i class="fa fa-video-camera"></i> 生成视频
-                            </button>
-                        </div>
-                    </div>
+<div class="input-bar">
+  <input id="prompt" placeholder="输入描述词">
+  <button onclick="send()">生成</button>
+  <button class="clear" onclick="clearChat()">清空</button>
+</div>
 
-                    <!-- 图生视频 -->
-                    <div id="img2video" class="tab-content hidden">
-                        <h2 class="text-lg font-semibold mb-4">图生视频</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">上传起始图片</label>
-                                <div class="border-2 border-dashed rounded-lg p-6 text-center">
-                                    <input type="file" class="hidden" id="img2videoFile">
-                                    <label for="img2videoFile" class="cursor-pointer">
-                                        <i class="fa fa-image text-gray-400 text-2xl"></i>
-                                        <p class="text-sm mt-2">上传图片</p>
-                                    </label>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">运动描述</label>
-                                <input type="text" placeholder="例如：缓慢放大，镜头推进" class="w-full p-3 border rounded-lg">
-                            </div>
-                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
-                                图片生成视频
-                            </button>
-                        </div>
-                    </div>
+<script>
+const chat = document.getElementById('chat');
+const prompt = document.getElementById('prompt');
+const mode = document.getElementById('mode');
 
-                    <!-- 首尾帧生视频 -->
-                    <div id="frame2video" class="tab-content hidden">
-                        <h2 class="text-lg font-semibold mb-4">首尾帧生视频</h2>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-sm mb-2">首帧图片</label>
-                                <div class="border-dashed border rounded-lg p-4 text-center">
-                                    <input type="file" class="hidden" id="firstFrame">
-                                    <label for="firstFrame" class="text-sm cursor-pointer">上传</label>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm mb-2">尾帧图片</label>
-                                <div class="border-dashed border rounded-lg p-4 text-center">
-                                    <input type="file" class="hidden" id="lastFrame">
-                                    <label for="lastFrame" class="text-sm cursor-pointer">上传</label>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
-                            生成过渡视频
-                        </button>
-                    </div>
+const panels = {
+  text2img: null,
+  text2video: null,
+  img2video: document.getElementById('p_img2video'),
+  headtail2video: document.getElementById('p_headtail'),
+  ref2video: document.getElementById('p_ref')
+};
 
-                    <!-- 参考视频生视频 -->
-                    <div id="refvideo" class="tab-content hidden">
-                        <h2 class="text-lg font-semibold mb-4">参考视频生视频</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm mb-2">上传参考视频</label>
-                                <div class="border rounded-lg p-5 text-center">
-                                    <input type="file" accept="video/*" class="hidden" id="refVideo">
-                                    <label for="refVideo" class="cursor-pointer">
-                                        <i class="fa fa-file-video-o text-gray-400"></i>
-                                        <p class="mt-2 text-sm">选择视频</p>
-                                    </label>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm mb-2">新视频描述</label>
-                                <textarea class="w-full border rounded-lg p-3 h-20"></textarea>
-                            </div>
-                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
-                                基于参考视频生成
-                            </button>
-                        </div>
-                    </div>
+let history = JSON.parse(localStorage.getItem('jimeng_full_history') || '[]');
 
-                    <!-- 全能参考生视频 -->
-                    <div id="allref" class="tab-content hidden">
-                        <h2 class="text-lg font-semibold mb-4">全能参考生视频</h2>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-sm block mb-2">参考图片</label>
-                                    <div class="border rounded-lg p-4 text-center">
-                                        <input type="file" class="hidden" id="allImg">
-                                        <label for="allImg" class="text-sm">上传</label>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-sm block mb-2">参考视频</label>
-                                    <div class="border rounded-lg p-4 text-center">
-                                        <input type="file" class="hidden" id="allVideo">
-                                        <label for="allVideo" class="text-sm">上传</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-sm block mb-2">详细创作指令</label>
-                                <textarea class="w-full border rounded-lg p-3 h-24" placeholder="结合图片+视频+文字生成全新视频"></textarea>
-                            </div>
-                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
-                                <i class="fa fa-star"></i> 全能创作
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+mode.addEventListener('change', () => {
+  Object.values(panels).forEach(p => p && (p.style.display = 'none'));
+  const p = panels[mode.value];
+  if (p) p.style.display = 'block';
+});
 
-            <!-- 右侧：结果展示区 -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-xl p-5 card-shadow h-full">
-                    <h2 class="text-lg font-semibold mb-4">生成结果</h2>
-                    
-                    <!-- 空状态 -->
-                    <div id="emptyState" class="h-[400px] flex flex-col items-center justify-center text-gray-400">
-                        <i class="fa fa-image text-4xl mb-3"></i>
-                        <p class="text-sm">暂无生成内容</p>
-                    </div>
-                    
-                    <!-- 加载状态 -->
-                    <div id="loadingState" class="hidden h-[400px] flex flex-col items-center justify-center text-primary">
-                        <i class="fa fa-spinner fa-spin text-3xl mb-3"></i>
-                        <p class="text-sm">正在生成中，请稍候...</p>
-                    </div>
-                    
-                    <!-- 结果展示 -->
-                    <div id="resultContainer" class="hidden space-y-4">
-                        <div class="w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                            <img id="resultImg" class="w-full h-full object-contain" alt="生成结果">
-                            <video id="resultVideo" class="w-full h-full object-contain" controls></video>
-                        </div>
-                        <div class="flex gap-2">
-                            <button id="downloadBtn" class="flex-1 py-2 bg-gray-800 text-white rounded-lg hover:bg-black transition">
-                                <i class="fa fa-download mr-1"></i> 下载
-                            </button>
-                            <button id="retryBtn" class="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                                <i class="fa fa-refresh mr-1"></i> 重新生成
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+function loadHistory() {
+  chat.innerHTML = '';
+  history.forEach(h => addMsg(h.text, h.isUser, h.kind, h.url));
+}
 
-    <!-- API设置弹窗 -->
-    <div id="settingModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl w-full max-w-md p-6 mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">API设置</h3>
-                <button id="closeSetting" class="text-gray-400 hover:text-gray-600">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-2">即梦API Key</label>
-                    <input id="apiKey" type="text" placeholder="粘贴你的即梦API Key" class="w-full p-3 border rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">API接口地址</label>
-                    <input id="apiUrl" type="text" value="https://api.jimengai.com/v1" class="w-full p-3 border rounded-lg" readonly>
-                </div>
-                <p class="text-xs text-gray-500">提示：API Key将保存在本地浏览器中，不会上传到服务器</p>
-                <button id="saveApiBtn" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition">
-                    保存设置
-                </button>
-            </div>
-        </div>
-    </div>
+function addMsg(text, isUser, kind = '', url = '') {
+  const div = document.createElement('div');
+  div.className = `msg ${isUser ? 'user' : 'bot'}`;
+  div.innerText = text;
+  if (kind === 'img') {
+    const img = new Image();
+    img.src = url; img.className = 'result-img';
+    div.appendChild(img);
+  }
+  if (kind === 'video') {
+    const video = document.createElement('video');
+    video.src = url; video.controls = true; video.className = 'result-video';
+    div.appendChild(video);
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-    <script>
-        // 全局变量
-        let currentTab = 'txt2img';
-        let apiKey = localStorage.getItem('jimengApiKey') || '';
-        let apiUrl = localStorage.getItem('jimengApiUrl') || 'https://api.jimengai.com/v1';
+function showLoading(text) {
+  const div = document.createElement('div');
+  div.className = 'msg bot loading';
+  div.innerText = text; div.id = 'loading';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-        // DOM加载完成
-        document.addEventListener('DOMContentLoaded', function() {
-            // 标签页切换
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    // 切换样式
-                    tabBtns.forEach(b => b.classList.remove('tab-active'));
-                    btn.classList.add('tab-active');
-                    
-                    // 切换内容
-                    currentTab = btn.dataset.tab;
-                    tabContents.forEach(tab => tab.classList.add('hidden'));
-                    document.getElementById(currentTab).classList.remove('hidden');
-                });
-            });
+function hideLoading() {
+  const el = document.getElementById('loading');
+  if (el) el.remove();
+}
 
-            // 设置弹窗
-            const settingModal = document.getElementById('settingModal');
-            document.getElementById('settingBtn').addEventListener('click', () => {
-                settingModal.classList.remove('hidden');
-                document.getElementById('apiKey').value = apiKey;
-                document.getElementById('apiUrl').value = apiUrl;
-            });
-            document.getElementById('closeSetting').addEventListener('click', () => {
-                settingModal.classList.add('hidden');
-            });
+async function send() {
+  const text = prompt.value.trim();
+  if (!text) return;
+  addMsg(text, true);
+  prompt.value = '';
+  history.push({ text, isUser: true });
 
-            // 保存API设置
-            document.getElementById('saveApiBtn').addEventListener('click', () => {
-                apiKey = document.getElementById('apiKey').value.trim();
-                apiUrl = document.getElementById('apiUrl').value.trim();
-                
-                if(!apiKey) {
-                    alert('请输入API Key');
-                    return;
-                }
-                
-                localStorage.setItem('jimengApiKey', apiKey);
-                localStorage.setItem('jimengApiUrl', apiUrl);
-                settingModal.classList.add('hidden');
-                alert('API设置保存成功！');
-            });
+  showLoading('正在生成，请稍候…');
 
-            // 生成按钮点击
-            const generateBtns = document.querySelectorAll('.generate-btn');
-            generateBtns.forEach(btn => {
-                btn.addEventListener('click', startGenerate);
-            });
+  const fd = new FormData();
+  fd.append('prompt', text);
+  fd.append('mode', mode.value);
 
-            // 下载按钮
-            document.getElementById('downloadBtn').addEventListener('click', () => {
-                const img = document.getElementById('resultImg');
-                const video = document.getElementById('resultVideo');
-                const url = img.src !== '' ? img.src : video.src;
-                if(!url || url === '#') return;
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'ai-creation-' + new Date().getTime();
-                a.click();
-            });
+  if (mode.value === 'img2video') {
+    const f = document.getElementById('img1').files[0];
+    if (f) fd.append('img1', f);
+  }
+  if (mode.value === 'headtail2video') {
+    const h = document.getElementById('head').files[0];
+    const t = document.getElementById('tail').files[0];
+    if (h) fd.append('head', h);
+    if (t) fd.append('tail', t);
+  }
+  if (mode.value === 'ref2video') {
+    const fs = document.getElementById('refs').files;
+    for (let i = 0; i < fs.length; i++) fd.append('refs[]', fs[i]);
+  }
 
-            // 重新生成
-            document.getElementById('retryBtn').addEventListener('click', startGenerate);
-        });
+  try {
+    const r = await fetch('/api/generate', { method: 'POST', body: fd });
+    const data = await r.json();
+    hideLoading();
+    const kind = data.type === 'image' ? 'img' : 'video';
+    const reply = kind === 'img' ? '图片生成完成' : '视频生成完成';
+    addMsg(reply, false, kind, data.url);
+    history.push({ text: reply, isUser: false, kind, url: data.url });
+    localStorage.setItem('jimeng_full_history', JSON.stringify(history));
+  } catch (e) {
+    hideLoading();
+    addMsg('生成失败：' + e.message, false);
+  }
+}
 
-        // 开始生成任务
-        function startGenerate() {
-            // 校验API
-            if(!apiKey) {
-                alert('请先配置即梦API Key！');
-                document.getElementById('settingModal').classList.remove('hidden');
-                return;
-            }
+function clearChat() {
+  history = [];
+  localStorage.removeItem('jimeng_full_history');
+  chat.innerHTML = '';
+}
 
-            // 显示加载
-            document.getElementById('emptyState').classList.add('hidden');
-            document.getElementById('resultContainer').classList.add('hidden');
-            document.getElementById('loadingState').classList.remove('hidden');
-
-            // 模拟API调用（实际项目替换为真实请求）
-            setTimeout(() => {
-                showResult();
-            }, 2000);
-        }
-
-        // 展示结果
-        function showResult() {
-            document.getElementById('loadingState').classList.add('hidden');
-            document.getElementById('resultContainer').classList.remove('hidden');
-            
-            const img = document.getElementById('resultImg');
-            const video = document.getElementById('resultVideo');
-            
-            // 根据类型显示不同结果
-            if(currentTab.includes('video')) {
-                img.style.display = 'none';
-                video.style.display = 'block';
-                video.src = 'https://picsum.photos/1080/720.mp4'; // 测试视频
-            } else {
-                video.style.display = 'none';
-                img.style.display = 'block';
-                img.src = 'https://picsum.photos/1024/1024?random=' + Math.random(); // 测试图片
-            }
-        }
-
-        // ========================
-        // 真实即梦API调用函数
-        // 对接时替换startGenerate内代码即可
-        // ========================
-        async function callJimengApi(taskType, params) {
-            try {
-                const res = await axios({
-                    url: `${apiUrl}/task`,
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        task_type: taskType,
-                        ...params
-                    }
-                });
-                return res.data;
-            } catch (err) {
-                console.error('API调用失败：', err);
-                alert('生成失败：' + (err.response?.data?.msg || '网络错误'));
-                hideLoading();
-            }
-        }
-    </script>
+prompt.addEventListener('keydown', e => e.key === 'Enter' && send());
+mode.dispatchEvent(new Event('change'));
+loadHistory();
+</script>
 </body>
 </html>
