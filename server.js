@@ -10,8 +10,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ====================== 你只改这里 ======================
-const VOLC_ACCESS_KEY = "你自己的AK";
-const VOLC_SECRET_KEY = "你自己的SK";
+const VOLC_ACCESS_KEY = "AKLTYjQ5YzU0MDYxYWJmNDk0MThhMTIxZjFmZmUyMzMzNTA";
+const VOLC_SECRET_KEY = "TW1Zek16TmtaakJpWmpReU5EWmxOMkl4TUdSbU0yTmpORGt4WWpnMVlUVQ==";
 // =======================================================
 
 const storage = multer.memoryStorage();
