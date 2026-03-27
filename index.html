@@ -1,153 +1,473 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>即梦AI全功能平台</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system}
-body{background:#f6f8fa;max-width:1000px;margin:40px auto;padding:0 20px}
-.main{background:#fff;border-radius:16px;overflow:hidden}
-.tabs{display:flex}
-.tab{flex:1;padding:16px;text-align:center;cursor:pointer;background:#fafafa;font-weight:500}
-.tab.active{background:#fff;color:#007aff;border-bottom:2px solid #007aff}
-.panel{display:none;padding:24px}
-.panel.active{display:block}
-.subtabs{display:flex;margin-bottom:12px;flex-wrap:wrap}
-.subtab{flex:1;padding:10px;text-align:center;cursor:pointer;background:#f9f9f9;border-radius:8px;margin:2px;min-width:100px}
-.subtab.active{background:#eef4ff;color:#007aff}
-.subpanel{display:none}
-.subpanel.active{display:block}
-input,textarea,button{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;font-size:15px}
-button{background:#007aff;color:white;border:none}
-button:hover{background:#0066cc}
-.upload{border:2px dashed #ddd;padding:20px;text-align:center;border-radius:10px;cursor:pointer;margin-bottom:10px}
-.preview{max-width:100%;max-height:220px;border-radius:10px;margin-top:10px}
-.result{margin-top:16px}
-.result img,.result video{max-width:100%;border-radius:12px;margin-top:10px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI创作平台 - 即梦API</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    
+    <!-- Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#7B61FF',
+                        dark: '#1E1E2E',
+                        light: '#F5F7FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .tab-active {
+                @apply border-b-2 border-primary text-primary font-medium;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            }
+        }
+    </style>
 </head>
-<body>
-<h1 style="text-align:center;margin-bottom:20px">即梦AI全功能生成器</h1>
-<div class="main">
+<body class="bg-light min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa fa-magic text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-dark">AI创作平台</h1>
+            </div>
+            
+            <!-- API设置按钮 -->
+            <button id="settingBtn" class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
+                <i class="fa fa-cog"></i>
+                <span class="hidden sm:inline">API设置</span>
+            </button>
+        </div>
+    </header>
 
-<div class="tabs">
-<div class="tab active" onclick="go(0)">🎨 生图</div>
-<div class="tab" onclick="go(1)">🎬 生视频</div>
-</div>
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 功能标签页 -->
+        <div class="bg-white rounded-xl p-4 mb-6 overflow-x-auto card-shadow">
+            <div class="flex gap-1 sm:gap-2 tabs-container">
+                <button class="tab-btn tab-active px-3 py-2 text-sm" data-tab="txt2img">文生图</button>
+                <button class="tab-btn px-3 py-2 text-sm" data-tab="img2img">图生图</button>
+                <button class="tab-btn px-3 py-2 text-sm" data-tab="txt2video">文生视频</button>
+                <button class="tab-btn px-3 py-2 text-sm" data-tab="img2video">图生视频</button>
+                <button class="tab-btn px-3 py-2 text-sm" data-tab="frame2video">首尾帧生视频</button>
+                <button class="tab-btn px-3 py-2 text-sm" data-tab="refvideo">参考视频生视频</button>
+                <button class="tab-btn px-3 py-2 text-sm" data-tab="allref">全能参考生视频</button>
+            </div>
+        </div>
 
-<!-- 生图 -->
-<div class="panel active" id="m0">
-<div class="subtabs">
-<div class="subtab active" onclick="sub(0,0)">文生图</div>
-<div class="subtab" onclick="sub(0,1)">图生图</div>
-</div>
+        <!-- 内容面板 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：参数配置区 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl p-5 card-shadow">
+                    <!-- 文生图 -->
+                    <div id="txt2img" class="tab-content block">
+                        <h2 class="text-lg font-semibold mb-4">文生图</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">提示词（正面）</label>
+                                <textarea placeholder="描述你想生成的图片，例如：一只可爱的猫咪，油画风格，高清" class="w-full p-3 border rounded-lg h-24 resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">负面提示词（可选）</label>
+                                <textarea placeholder="不想生成的内容，例如：模糊，低质量，失真" class="w-full p-3 border rounded-lg h-16 resize-none"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">宽度</label>
+                                    <input type="number" value="1024" class="w-full p-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">高度</label>
+                                    <input type="number" value="1024" class="w-full p-2 border rounded-lg">
+                                </div>
+                            </div>
+                            <button class="generate-btn w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition flex items-center justify-center gap-2">
+                                <i class="fa fa-rocket"></i>
+                                <span>开始生成图片</span>
+                            </button>
+                        </div>
+                    </div>
 
-<div class="subpanel active" id="c0_0">
-<textarea id="t2i_p" placeholder="提示词"></textarea>
-<button onclick="txt2img()">生成图片</button>
-<div class="result" id="t2i_r"></div>
-</div>
+                    <!-- 图生图 -->
+                    <div id="img2img" class="tab-content hidden">
+                        <h2 class="text-lg font-semibold mb-4">图生图</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">上传参考图片</label>
+                                <div class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50">
+                                    <input type="file" class="hidden" id="img2imgFile">
+                                    <label for="img2imgFile" class="cursor-pointer">
+                                        <i class="fa fa-upload text-gray-400 text-2xl"></i>
+                                        <p class="text-sm text-gray-500 mt-2">点击上传图片</p>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">提示词</label>
+                                <textarea placeholder="描述修改方向" class="w-full p-3 border rounded-lg h-20"></textarea>
+                            </div>
+                            <button class="generate-btn w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition">
+                                <i class="fa fa-magic"></i> 生成新图片
+                            </button>
+                        </div>
+                    </div>
 
-<div class="subpanel" id="c0_1">
-<div class="upload" onclick="document.getElementById('i2i_f').click()">点击上传图片</div>
-<input type="file" id="i2i_f" style="display:none" onchange="preview(this,'i2i_pv')">
-<img id="i2i_pv" class="preview">
-<textarea id="i2i_p" placeholder="提示词"></textarea>
-<button onclick="img2img()">图生图</button>
-<div class="result" id="i2i_r"></div>
-</div>
-</div>
+                    <!-- 文生视频 -->
+                    <div id="txt2video" class="tab-content hidden">
+                        <h2 class="text-lg font-semibold mb-4">文生视频</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">视频描述</label>
+                                <textarea placeholder="描述你想生成的视频" class="w-full p-3 border rounded-lg h-24"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">时长(秒)</label>
+                                    <input type="number" value="5" class="w-full p-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">分辨率</label>
+                                    <select class="w-full p-2 border rounded-lg">
+                                        <option>1080P</option>
+                                        <option>720P</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition">
+                                <i class="fa fa-video-camera"></i> 生成视频
+                            </button>
+                        </div>
+                    </div>
 
-<!-- 生视频 -->
-<div class="panel" id="m1">
-<div class="subtabs">
-<div class="subtab active" onclick="sub(1,0)">文生视频</div>
-<div class="subtab" onclick="sub(1,1)">图生视频</div>
-<div class="subtab" onclick="sub(1,2)">首尾帧</div>
-<div class="subtab" onclick="sub(1,3)">全能参考</div>
-<div class="subtab" onclick="sub(1,4)">参考视频</div>
-</div>
+                    <!-- 图生视频 -->
+                    <div id="img2video" class="tab-content hidden">
+                        <h2 class="text-lg font-semibold mb-4">图生视频</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">上传起始图片</label>
+                                <div class="border-2 border-dashed rounded-lg p-6 text-center">
+                                    <input type="file" class="hidden" id="img2videoFile">
+                                    <label for="img2videoFile" class="cursor-pointer">
+                                        <i class="fa fa-image text-gray-400 text-2xl"></i>
+                                        <p class="text-sm mt-2">上传图片</p>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">运动描述</label>
+                                <input type="text" placeholder="例如：缓慢放大，镜头推进" class="w-full p-3 border rounded-lg">
+                            </div>
+                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
+                                图片生成视频
+                            </button>
+                        </div>
+                    </div>
 
-<div class="subpanel active" id="c1_0">
-<textarea id="v1_p" placeholder="提示词"></textarea>
-<button onclick="v1()">文生视频</button>
-<div class="result" id="v1_r"></div>
-</div>
+                    <!-- 首尾帧生视频 -->
+                    <div id="frame2video" class="tab-content hidden">
+                        <h2 class="text-lg font-semibold mb-4">首尾帧生视频</h2>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm mb-2">首帧图片</label>
+                                <div class="border-dashed border rounded-lg p-4 text-center">
+                                    <input type="file" class="hidden" id="firstFrame">
+                                    <label for="firstFrame" class="text-sm cursor-pointer">上传</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">尾帧图片</label>
+                                <div class="border-dashed border rounded-lg p-4 text-center">
+                                    <input type="file" class="hidden" id="lastFrame">
+                                    <label for="lastFrame" class="text-sm cursor-pointer">上传</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
+                            生成过渡视频
+                        </button>
+                    </div>
 
-<div class="subpanel" id="c1_1">
-<div class="upload" onclick="document.getElementById('v2_f').click()">上传图片</div>
-<input type="file" id="v2_f" style="display:none" onchange="preview(this,'v2_pv')">
-<img id="v2_pv" class="preview">
-<textarea id="v2_p" placeholder="提示词"></textarea>
-<button onclick="v2()">图生视频</button>
-<div class="result" id="v2_r"></div>
-</div>
+                    <!-- 参考视频生视频 -->
+                    <div id="refvideo" class="tab-content hidden">
+                        <h2 class="text-lg font-semibold mb-4">参考视频生视频</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm mb-2">上传参考视频</label>
+                                <div class="border rounded-lg p-5 text-center">
+                                    <input type="file" accept="video/*" class="hidden" id="refVideo">
+                                    <label for="refVideo" class="cursor-pointer">
+                                        <i class="fa fa-file-video-o text-gray-400"></i>
+                                        <p class="mt-2 text-sm">选择视频</p>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">新视频描述</label>
+                                <textarea class="w-full border rounded-lg p-3 h-20"></textarea>
+                            </div>
+                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
+                                基于参考视频生成
+                            </button>
+                        </div>
+                    </div>
 
-<div class="subpanel" id="c1_2">
-<div class="upload" onclick="document.getElementById('v3_1').click()">上传首帧</div>
-<input type="file" id="v3_1" style="display:none" onchange="preview(this,'pv3_1')">
-<img id="pv3_1" class="preview">
-<div class="upload" onclick="document.getElementById('v3_2').click()">上传尾帧</div>
-<input type="file" id="v3_2" style="display:none" onchange="preview(this,'pv3_2')">
-<img id="pv3_2" class="preview">
-<textarea id="v3_p" placeholder="提示词"></textarea>
-<button onclick="v3()">生成首尾帧视频</button>
-<div class="result" id="v3_r"></div>
-</div>
+                    <!-- 全能参考生视频 -->
+                    <div id="allref" class="tab-content hidden">
+                        <h2 class="text-lg font-semibold mb-4">全能参考生视频</h2>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm block mb-2">参考图片</label>
+                                    <div class="border rounded-lg p-4 text-center">
+                                        <input type="file" class="hidden" id="allImg">
+                                        <label for="allImg" class="text-sm">上传</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm block mb-2">参考视频</label>
+                                    <div class="border rounded-lg p-4 text-center">
+                                        <input type="file" class="hidden" id="allVideo">
+                                        <label for="allVideo" class="text-sm">上传</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-sm block mb-2">详细创作指令</label>
+                                <textarea class="w-full border rounded-lg p-3 h-24" placeholder="结合图片+视频+文字生成全新视频"></textarea>
+                            </div>
+                            <button class="generate-btn w-full py-3 bg-secondary text-white rounded-lg">
+                                <i class="fa fa-star"></i> 全能创作
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<div class="subpanel" id="c1_3">
-<div class="upload" onclick="document.getElementById('v4_f').click()">上传参考图</div>
-<input type="file" id="v4_f" style="display:none" onchange="preview(this,'v4_pv')">
-<img id="v4_pv" class="preview">
-<textarea id="v4_p" placeholder="提示词"></textarea>
-<button onclick="v4()">全能参考视频</button>
-<div class="result" id="v4_r"></div>
-</div>
+            <!-- 右侧：结果展示区 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl p-5 card-shadow h-full">
+                    <h2 class="text-lg font-semibold mb-4">生成结果</h2>
+                    
+                    <!-- 空状态 -->
+                    <div id="emptyState" class="h-[400px] flex flex-col items-center justify-center text-gray-400">
+                        <i class="fa fa-image text-4xl mb-3"></i>
+                        <p class="text-sm">暂无生成内容</p>
+                    </div>
+                    
+                    <!-- 加载状态 -->
+                    <div id="loadingState" class="hidden h-[400px] flex flex-col items-center justify-center text-primary">
+                        <i class="fa fa-spinner fa-spin text-3xl mb-3"></i>
+                        <p class="text-sm">正在生成中，请稍候...</p>
+                    </div>
+                    
+                    <!-- 结果展示 -->
+                    <div id="resultContainer" class="hidden space-y-4">
+                        <div class="w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                            <img id="resultImg" class="w-full h-full object-contain" alt="生成结果">
+                            <video id="resultVideo" class="w-full h-full object-contain" controls></video>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="downloadBtn" class="flex-1 py-2 bg-gray-800 text-white rounded-lg hover:bg-black transition">
+                                <i class="fa fa-download mr-1"></i> 下载
+                            </button>
+                            <button id="retryBtn" class="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fa fa-refresh mr-1"></i> 重新生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-<div class="subpanel" id="c1_4">
-<div class="upload" onclick="document.getElementById('v5_f').click()">上传参考视频</div>
-<input type="file" id="v5_f" style="display:none" onchange="preview(this,'v5_pv')" accept="video/*">
-<video id="v5_pv" class="preview" controls></video>
-<textarea id="v5_p" placeholder="提示词"></textarea>
-<button onclick="v5()">参考视频生视频</button>
-<div class="result" id="v5_r"></div>
-</div>
+    <!-- API设置弹窗 -->
+    <div id="settingModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl w-full max-w-md p-6 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">API设置</h3>
+                <button id="closeSetting" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">即梦API Key</label>
+                    <input id="apiKey" type="text" placeholder="粘贴你的即梦API Key" class="w-full p-3 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">API接口地址</label>
+                    <input id="apiUrl" type="text" value="https://api.jimengai.com/v1" class="w-full p-3 border rounded-lg" readonly>
+                </div>
+                <p class="text-xs text-gray-500">提示：API Key将保存在本地浏览器中，不会上传到服务器</p>
+                <button id="saveApiBtn" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
 
-</div>
-</div>
+    <script>
+        // 全局变量
+        let currentTab = 'txt2img';
+        let apiKey = localStorage.getItem('jimengApiKey') || '';
+        let apiUrl = localStorage.getItem('jimengApiUrl') || 'https://api.jimengai.com/v1';
 
-<script>
-function go(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab')[n].classList.add('active');document.querySelectorAll('.panel')[n].classList.add('active');}
-function sub(m,n){document.querySelectorAll('#m'+m+' .subtab').forEach(s=>s.classList.remove('active'));document.querySelectorAll('#m'+m+' .subpanel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('#m'+m+' .subtab')[n].classList.add('active');document.querySelectorAll('#m'+m+' .subpanel')[n].classList.add('active');}
+        // DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 标签页切换
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 切换样式
+                    tabBtns.forEach(b => b.classList.remove('tab-active'));
+                    btn.classList.add('tab-active');
+                    
+                    // 切换内容
+                    currentTab = btn.dataset.tab;
+                    tabContents.forEach(tab => tab.classList.add('hidden'));
+                    document.getElementById(currentTab).classList.remove('hidden');
+                });
+            });
 
-async function upload(fileId){const f=document.getElementById(fileId);const fd=new FormData();fd.append('file',f.files[0]);const r=await fetch('/api/upload',{method:'POST',body:fd});const d=await r.json();return d.base64;}
+            // 设置弹窗
+            const settingModal = document.getElementById('settingModal');
+            document.getElementById('settingBtn').addEventListener('click', () => {
+                settingModal.classList.remove('hidden');
+                document.getElementById('apiKey').value = apiKey;
+                document.getElementById('apiUrl').value = apiUrl;
+            });
+            document.getElementById('closeSetting').addEventListener('click', () => {
+                settingModal.classList.add('hidden');
+            });
 
-function preview(f,id){
-  const file = f.files[0];
-  const url = URL.createObjectURL(file);
-  const el = document.getElementById(id);
-  if(file.type.startsWith('video')){
-    el.src = url;
-    el.style.display = 'block';
-  }else{
-    el.src = url;
-    el.style.display = 'block';
-  }
-}
+            // 保存API设置
+            document.getElementById('saveApiBtn').addEventListener('click', () => {
+                apiKey = document.getElementById('apiKey').value.trim();
+                apiUrl = document.getElementById('apiUrl').value.trim();
+                
+                if(!apiKey) {
+                    alert('请输入API Key');
+                    return;
+                }
+                
+                localStorage.setItem('jimengApiKey', apiKey);
+                localStorage.setItem('jimengApiUrl', apiUrl);
+                settingModal.classList.add('hidden');
+                alert('API设置保存成功！');
+            });
 
-async function txt2img(){const r=document.getElementById('t2i_r');r.innerHTML='生成中...';const d=await fetch('/api/txt2img',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:document.getElementById('t2i_p').value})});const j=await d.json();if(j.code===200)r.innerHTML=`<img src="${j.data[0].url}">`;else r.innerHTML='失败';}
-async function img2img(){const r=document.getElementById('i2i_r');r.innerHTML='生成中...';const u=await upload('i2i_f');const d=await fetch('/api/img2img',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:document.getElementById('i2i_p').value,image_url:u})});const j=await d.json();if(j.code===200)r.innerHTML=`<img src="${j.data[0].url}">`;else r.innerHTML='失败';}
+            // 生成按钮点击
+            const generateBtns = document.querySelectorAll('.generate-btn');
+            generateBtns.forEach(btn => {
+                btn.addEventListener('click', startGenerate);
+            });
 
-async function v1(){const r=document.getElementById('v1_r');r.innerHTML='提交中...';const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'txt2video',prompt:document.getElementById('v1_p').value})});await task(d,r);}
-async function v2(){const r=document.getElementById('v2_r');r.innerHTML='提交中...';const u=await upload('v2_f');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'img2video',prompt:document.getElementById('v2_p').value,img:u})});await task(d,r);}
-async function v3(){const r=document.getElementById('v3_r');r.innerHTML='提交中...';const a=await upload('v3_1');const b=await upload('v3_2');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'first_last',prompt:document.getElementById('v3_p').value,first:a,last:b})});await task(d,r);}
-async function v4(){const r=document.getElementById('v4_r');r.innerHTML='提交中...';const u=await upload('v4_f');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'reference',prompt:document.getElementById('v4_p').value,ref:u})});await task(d,r);}
-async function v5(){const r=document.getElementById('v5_r');r.innerHTML='提交中...';const u=await upload('v5_f');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'vid2vid',prompt:document.getElementById('v5_p').value,vid:u})});await task(d,r);}
+            // 下载按钮
+            document.getElementById('downloadBtn').addEventListener('click', () => {
+                const img = document.getElementById('resultImg');
+                const video = document.getElementById('resultVideo');
+                const url = img.src !== '' ? img.src : video.src;
+                if(!url || url === '#') return;
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ai-creation-' + new Date().getTime();
+                a.click();
+            });
 
-async function task(dom,res){const j=await dom.json();if(j.code!==200){res.innerHTML='提交失败';return;}
-const t=j.data.task_id;for(let i=0;i<20;i++){await new Promise(s=>setTimeout(s,3000));res.innerHTML=`生成中... ${i+1}/20`;const q=await fetch('/api/task/'+t);const s=await q.json();if(s.data.status==='completed'){res.innerHTML=`<video src="${s.data.video_url}" controls>`;return;}
-if(s.data.status==='failed'){res.innerHTML='生成失败';return;}}
-res.innerHTML='生成超时，请重试';}
-</script>
+            // 重新生成
+            document.getElementById('retryBtn').addEventListener('click', startGenerate);
+        });
+
+        // 开始生成任务
+        function startGenerate() {
+            // 校验API
+            if(!apiKey) {
+                alert('请先配置即梦API Key！');
+                document.getElementById('settingModal').classList.remove('hidden');
+                return;
+            }
+
+            // 显示加载
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('resultContainer').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+
+            // 模拟API调用（实际项目替换为真实请求）
+            setTimeout(() => {
+                showResult();
+            }, 2000);
+        }
+
+        // 展示结果
+        function showResult() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('resultContainer').classList.remove('hidden');
+            
+            const img = document.getElementById('resultImg');
+            const video = document.getElementById('resultVideo');
+            
+            // 根据类型显示不同结果
+            if(currentTab.includes('video')) {
+                img.style.display = 'none';
+                video.style.display = 'block';
+                video.src = 'https://picsum.photos/1080/720.mp4'; // 测试视频
+            } else {
+                video.style.display = 'none';
+                img.style.display = 'block';
+                img.src = 'https://picsum.photos/1024/1024?random=' + Math.random(); // 测试图片
+            }
+        }
+
+        // ========================
+        // 真实即梦API调用函数
+        // 对接时替换startGenerate内代码即可
+        // ========================
+        async function callJimengApi(taskType, params) {
+            try {
+                const res = await axios({
+                    url: `${apiUrl}/task`,
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    data: {
+                        task_type: taskType,
+                        ...params
+                    }
+                });
+                return res.data;
+            } catch (err) {
+                console.error('API调用失败：', err);
+                alert('生成失败：' + (err.response?.data?.msg || '网络错误'));
+                hideLoading();
+            }
+        }
+    </script>
 </body>
 </html>
