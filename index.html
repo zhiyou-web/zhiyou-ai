@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>即梦AI全功能平台</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system}
+body{background:#f6f8fa;max-width:1000px;margin:40px auto;padding:0 20px}
+.main{background:#fff;border-radius:16px;overflow:hidden}
+.tabs{display:flex}
+.tab{flex:1;padding:16px;text-align:center;cursor:pointer;background:#fafafa;font-weight:500}
+.tab.active{background:#fff;color:#007aff;border-bottom:2px solid #007aff}
+.panel{display:none;padding:24px}
+.panel.active{display:block}
+.subtabs{display:flex;margin-bottom:12px;flex-wrap:wrap}
+.subtab{flex:1;padding:10px;text-align:center;cursor:pointer;background:#f9f9f9;border-radius:8px;margin:2px;min-width:100px}
+.subtab.active{background:#eef4ff;color:#007aff}
+.subpanel{display:none}
+.subpanel.active{display:block}
+input,textarea,button{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;font-size:15px}
+button{background:#007aff;color:white;border:none}
+button:hover{background:#0066cc}
+.upload{border:2px dashed #ddd;padding:20px;text-align:center;border-radius:10px;cursor:pointer;margin-bottom:10px}
+.preview{max-width:100%;max-height:220px;border-radius:10px;margin-top:10px}
+.result{margin-top:16px}
+.result img,.result video{max-width:100%;border-radius:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<h1 style="text-align:center;margin-bottom:20px">即梦AI全功能生成器</h1>
+<div class="main">
+
+<div class="tabs">
+<div class="tab active" onclick="go(0)">🎨 生图</div>
+<div class="tab" onclick="go(1)">🎬 生视频</div>
+</div>
+
+<!-- 生图 -->
+<div class="panel active" id="m0">
+<div class="subtabs">
+<div class="subtab active" onclick="sub(0,0)">文生图</div>
+<div class="subtab" onclick="sub(0,1)">图生图</div>
+</div>
+
+<div class="subpanel active" id="c0_0">
+<textarea id="t2i_p" placeholder="提示词"></textarea>
+<button onclick="txt2img()">生成图片</button>
+<div class="result" id="t2i_r"></div>
+</div>
+
+<div class="subpanel" id="c0_1">
+<div class="upload" onclick="document.getElementById('i2i_f').click()">点击上传图片</div>
+<input type="file" id="i2i_f" style="display:none" onchange="preview(this,'i2i_pv')">
+<img id="i2i_pv" class="preview">
+<textarea id="i2i_p" placeholder="提示词"></textarea>
+<button onclick="img2img()">图生图</button>
+<div class="result" id="i2i_r"></div>
+</div>
+</div>
+
+<!-- 生视频 -->
+<div class="panel" id="m1">
+<div class="subtabs">
+<div class="subtab active" onclick="sub(1,0)">文生视频</div>
+<div class="subtab" onclick="sub(1,1)">图生视频</div>
+<div class="subtab" onclick="sub(1,2)">首尾帧</div>
+<div class="subtab" onclick="sub(1,3)">全能参考</div>
+<div class="subtab" onclick="sub(1,4)">参考视频</div>
+</div>
+
+<div class="subpanel active" id="c1_0">
+<textarea id="v1_p" placeholder="提示词"></textarea>
+<button onclick="v1()">文生视频</button>
+<div class="result" id="v1_r"></div>
+</div>
+
+<div class="subpanel" id="c1_1">
+<div class="upload" onclick="document.getElementById('v2_f').click()">上传图片</div>
+<input type="file" id="v2_f" style="display:none" onchange="preview(this,'v2_pv')">
+<img id="v2_pv" class="preview">
+<textarea id="v2_p" placeholder="提示词"></textarea>
+<button onclick="v2()">图生视频</button>
+<div class="result" id="v2_r"></div>
+</div>
+
+<div class="subpanel" id="c1_2">
+<div class="upload" onclick="document.getElementById('v3_1').click()">上传首帧</div>
+<input type="file" id="v3_1" style="display:none" onchange="preview(this,'pv3_1')">
+<img id="pv3_1" class="preview">
+<div class="upload" onclick="document.getElementById('v3_2').click()">上传尾帧</div>
+<input type="file" id="v3_2" style="display:none" onchange="preview(this,'pv3_2')">
+<img id="pv3_2" class="preview">
+<textarea id="v3_p" placeholder="提示词"></textarea>
+<button onclick="v3()">生成首尾帧视频</button>
+<div class="result" id="v3_r"></div>
+</div>
+
+<div class="subpanel" id="c1_3">
+<div class="upload" onclick="document.getElementById('v4_f').click()">上传参考图</div>
+<input type="file" id="v4_f" style="display:none" onchange="preview(this,'v4_pv')">
+<img id="v4_pv" class="preview">
+<textarea id="v4_p" placeholder="提示词"></textarea>
+<button onclick="v4()">全能参考视频</button>
+<div class="result" id="v4_r"></div>
+</div>
+
+<div class="subpanel" id="c1_4">
+<div class="upload" onclick="document.getElementById('v5_f').click()">上传参考视频</div>
+<input type="file" id="v5_f" style="display:none" onchange="preview(this,'v5_pv')" accept="video/*">
+<video id="v5_pv" class="preview" controls></video>
+<textarea id="v5_p" placeholder="提示词"></textarea>
+<button onclick="v5()">参考视频生视频</button>
+<div class="result" id="v5_r"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+function go(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab')[n].classList.add('active');document.querySelectorAll('.panel')[n].classList.add('active');}
+function sub(m,n){document.querySelectorAll('#m'+m+' .subtab').forEach(s=>s.classList.remove('active'));document.querySelectorAll('#m'+m+' .subpanel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('#m'+m+' .subtab')[n].classList.add('active');document.querySelectorAll('#m'+m+' .subpanel')[n].classList.add('active');}
+
+async function upload(fileId){const f=document.getElementById(fileId);const fd=new FormData();fd.append('file',f.files[0]);const r=await fetch('/api/upload',{method:'POST',body:fd});const d=await r.json();return d.base64;}
+
+function preview(f,id){
+  const file = f.files[0];
+  const url = URL.createObjectURL(file);
+  const el = document.getElementById(id);
+  if(file.type.startsWith('video')){
+    el.src = url;
+    el.style.display = 'block';
+  }else{
+    el.src = url;
+    el.style.display = 'block';
+  }
+}
+
+async function txt2img(){const r=document.getElementById('t2i_r');r.innerHTML='生成中...';const d=await fetch('/api/txt2img',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:document.getElementById('t2i_p').value})});const j=await d.json();if(j.code===200)r.innerHTML=`<img src="${j.data[0].url}">`;else r.innerHTML='失败';}
+async function img2img(){const r=document.getElementById('i2i_r');r.innerHTML='生成中...';const u=await upload('i2i_f');const d=await fetch('/api/img2img',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:document.getElementById('i2i_p').value,image_url:u})});const j=await d.json();if(j.code===200)r.innerHTML=`<img src="${j.data[0].url}">`;else r.innerHTML='失败';}
+
+async function v1(){const r=document.getElementById('v1_r');r.innerHTML='提交中...';const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'txt2video',prompt:document.getElementById('v1_p').value})});await task(d,r);}
+async function v2(){const r=document.getElementById('v2_r');r.innerHTML='提交中...';const u=await upload('v2_f');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'img2video',prompt:document.getElementById('v2_p').value,img:u})});await task(d,r);}
+async function v3(){const r=document.getElementById('v3_r');r.innerHTML='提交中...';const a=await upload('v3_1');const b=await upload('v3_2');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'first_last',prompt:document.getElementById('v3_p').value,first:a,last:b})});await task(d,r);}
+async function v4(){const r=document.getElementById('v4_r');r.innerHTML='提交中...';const u=await upload('v4_f');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'reference',prompt:document.getElementById('v4_p').value,ref:u})});await task(d,r);}
+async function v5(){const r=document.getElementById('v5_r');r.innerHTML='提交中...';const u=await upload('v5_f');const d=await fetch('/api/video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'vid2vid',prompt:document.getElementById('v5_p').value,vid:u})});await task(d,r);}
+
+async function task(dom,res){const j=await dom.json();if(j.code!==200){res.innerHTML='提交失败';return;}
+const t=j.data.task_id;for(let i=0;i<20;i++){await new Promise(s=>setTimeout(s,3000));res.innerHTML=`生成中... ${i+1}/20`;const q=await fetch('/api/task/'+t);const s=await q.json();if(s.data.status==='completed'){res.innerHTML=`<video src="${s.data.video_url}" controls>`;return;}
+if(s.data.status==='failed'){res.innerHTML='生成失败';return;}}
+res.innerHTML='生成超时，请重试';}
+</script>
+</body>
+</html>
